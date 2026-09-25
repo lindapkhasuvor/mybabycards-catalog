@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MyBabyCards — каталог</title>
+<meta name="description" content="Каталог карточек MyBabyCards">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="page">
+<header class="hero">
+  <div class="logo">MyBabyCards</div>
+  <h1>Каталог карточек</h1>
+  <p>Выберите раздел, чтобы посмотреть карточки.</p>
+</header>
+<section id="categories" class="categories" aria-label="Разделы каталога">
+  <button class="category" data-category="speech"><span class="emoji">🗣️</span><span><strong>Говорилки</strong><small>80 карточек</small></span></button>
+  <button class="category" data-category="firstWords"><span class="emoji">👶</span><span><strong>Первые слова</strong><small>49 карточек</small></span></button>
+  <button class="category" data-category="emotions"><span class="emoji">😊</span><span><strong>Эмоции</strong><small>17 карточек</small></span></button>
+</section>
+<section id="viewer" class="viewer hidden">
+  <div class="viewer-head">
+    <button id="back" class="back">← Разделы</button>
+    <div><h2 id="title"></h2><p id="count"></p></div>
+  </div>
+  <div id="embed" class="embed"></div>
+</section>
+</main>
+<script src="config.js"></script>
+<script src="https://www.dropbox.com/static/api/2/dropbox-embedder.js"></script>
+<script>
+const categories={
+ speech:{title:"🗣️ Говорилки",count:80,url:CATALOG.speech},
+ firstWords:{title:"👶 Первые слова",count:49,url:CATALOG.firstWords},
+ emotions:{title:"😊 Эмоции",count:17,url:CATALOG.emotions}
+};
+const categoriesEl=document.getElementById("categories");
+const viewer=document.getElementById("viewer");
+const titleEl=document.getElementById("title");
+const countEl=document.getElementById("count");
+const embedEl=document.getElementById("embed");
+
+function showCategory(key){
+ const item=categories[key];
+ titleEl.textContent=item.title;
+ countEl.textContent=item.count+" карточек";
+ categoriesEl.classList.add("hidden");
+ viewer.classList.remove("hidden");
+ embedEl.innerHTML="";
+ if(!CATALOG.APP_KEY){
+   embedEl.innerHTML='<div class="setup"><div class="setup-icon">☁️</div><h3>Подключаем Dropbox</h3><p>Для показа карточек прямо на этой странице нужен Dropbox App Key.</p></div>';
+   return;
+ }
+ Dropbox.embed(
+   item.url,
+   embedEl,
+   {height:"78vh",width:"100%"},
+   {appKey:CATALOG.APP_KEY}
+ );
+}
+document.querySelectorAll(".category").forEach(btn=>{
+ btn.addEventListener("click",()=>showCategory(btn.dataset.category));
+});
+document.getElementById("back").addEventListener("click",()=>{
+ viewer.classList.add("hidden");
+ categoriesEl.classList.remove("hidden");
+ embedEl.innerHTML="";
+});
+</script>
+</body>
+</html>
