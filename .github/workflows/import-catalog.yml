@@ -31,7 +31,7 @@ jobs:
             echo "Processing $target/$name"
             curl -L --fail --retry 3 "$url" -o "/tmp/catalog-import/source.png"
             base="${name%.png}"
-            magick "/tmp/catalog-import/source.png" -strip -quality 88 "$target/$base.webp"
+            convert "/tmp/catalog-import/source.png" -strip -quality 88 "$target/$base.webp"
           done < catalog-import-manifest.txt
 
           echo "Speech: $(find speech -type f -name '*.webp' | wc -l)"
