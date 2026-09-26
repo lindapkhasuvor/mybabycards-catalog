@@ -35,9 +35,13 @@ jobs:
           curl -L --fail --retry 3 "$WORDS_URL" -o /tmp/catalog-import/downloads/words.zip
           curl -L --fail --retry 3 "$EMOTIONS_URL" -o /tmp/catalog-import/downloads/emotions.zip
 
-          unzip -q /tmp/catalog-import/downloads/speech.zip -d /tmp/catalog-import/unpacked/speech
-          unzip -q /tmp/catalog-import/downloads/words.zip -d /tmp/catalog-import/unpacked/words
-          unzip -q /tmp/catalog-import/downloads/emotions.zip -d /tmp/catalog-import/unpacked/emotions
+          unzip -q -o /tmp/catalog-import/downloads/speech.zip -d /tmp/catalog-import/unpacked/speech || true
+          unzip -q -o /tmp/catalog-import/downloads/words.zip -d /tmp/catalog-import/unpacked/words || true
+          unzip -q -o /tmp/catalog-import/downloads/emotions.zip -d /tmp/catalog-import/unpacked/emotions || true
+
+          test "$(find /tmp/catalog-import/unpacked/speech -type f -iname '*.png' | wc -l)" -ge 80
+          test "$(find /tmp/catalog-import/unpacked/words -type f -iname '*.png' | wc -l)" -ge 47
+          test "$(find /tmp/catalog-import/unpacked/emotions -type f -iname '*.png' | wc -l)" -ge 17
 
           rm -rf speech first-words emotions
           mkdir -p speech first-words emotions
@@ -70,3 +74,5 @@ jobs:
           git push
 
 # trigger import
+
+# retry extraction
