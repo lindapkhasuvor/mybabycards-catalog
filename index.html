@@ -9,63 +9,164 @@
 </head>
 <body>
 <main class="page">
-<header class="hero">
-  <div class="logo">MyBabyCards</div>
-  <h1>Каталог карточек</h1>
-  <p>Выберите раздел, чтобы посмотреть карточки.</p>
-</header>
-<section id="categories" class="categories" aria-label="Разделы каталога">
-  <button class="category" data-category="speech"><span class="emoji">🗣️</span><span><strong>Говорилки</strong><small>80 карточек</small></span></button>
-  <button class="category" data-category="firstWords"><span class="emoji">👶</span><span><strong>Первые слова</strong><small>49 карточек</small></span></button>
-  <button class="category" data-category="emotions"><span class="emoji">😊</span><span><strong>Эмоции</strong><small>17 карточек</small></span></button>
-</section>
-<section id="viewer" class="viewer hidden">
-  <div class="viewer-head">
-    <button id="back" class="back">← Разделы</button>
-    <div><h2 id="title"></h2><p id="count"></p></div>
-  </div>
-  <div id="embed" class="embed"></div>
-</section>
-</main>
-<script src="config.js"></script>
-<script src="https://www.dropbox.com/static/api/2/dropbox-embedder.js"></script>
-<script>
-const categories={
- speech:{title:"🗣️ Говорилки",count:80,url:CATALOG.speech},
- firstWords:{title:"👶 Первые слова",count:49,url:CATALOG.firstWords},
- emotions:{title:"😊 Эмоции",count:17,url:CATALOG.emotions}
-};
-const categoriesEl=document.getElementById("categories");
-const viewer=document.getElementById("viewer");
-const titleEl=document.getElementById("title");
-const countEl=document.getElementById("count");
-const embedEl=document.getElementById("embed");
+  <header class="hero">
+    <div class="logo">MyBabyCards</div>
+    <h1>Каталог карточек</h1>
+    <p>Посмотрите примеры карточек перед заказом.</p>
+  </header>
 
-function showCategory(key){
- const item=categories[key];
- titleEl.textContent=item.title;
- countEl.textContent=item.count+" карточек";
- categoriesEl.classList.add("hidden");
- viewer.classList.remove("hidden");
- embedEl.innerHTML="";
- if(!CATALOG.APP_KEY){
-   embedEl.innerHTML='<div class="setup"><div class="setup-icon">☁️</div><h3>Подключаем Dropbox</h3><p>Для показа карточек прямо на этой странице нужен Dropbox App Key.</p></div>';
-   return;
- }
- Dropbox.embed(
-   item.url,
-   embedEl,
-   {height:"78vh",width:"100%"},
-   {appKey:CATALOG.APP_KEY}
- );
+  <section id="categories" class="categories" aria-label="Разделы каталога">
+    <button class="category" data-category="speech">
+      <span class="emoji">🗣️</span>
+      <span><strong>Говорилки</strong><small>80 карточек</small></span>
+    </button>
+    <button class="category" data-category="firstWords">
+      <span class="emoji">👶</span>
+      <span><strong>Первые слова</strong><small>46 карточек</small></span>
+    </button>
+    <button class="category" data-category="emotions">
+      <span class="emoji">😊</span>
+      <span><strong>Эмоции</strong><small>17 карточек</small></span>
+    </button>
+  </section>
+
+  <section id="viewer" class="viewer hidden" aria-live="polite">
+    <div class="viewer-head">
+      <button id="back" class="back" type="button">← Разделы</button>
+      <div>
+        <h2 id="title"></h2>
+        <p id="count"></p>
+      </div>
+    </div>
+    <div id="grid" class="grid"></div>
+  </section>
+</main>
+
+<div id="lightbox" class="lightbox hidden" role="dialog" aria-modal="true" aria-label="Просмотр карточки">
+  <button id="close" class="lightbox-close" type="button" aria-label="Закрыть">×</button>
+  <button id="prev" class="lightbox-nav prev" type="button" aria-label="Предыдущая">‹</button>
+  <img id="lightbox-image" alt="Карточка MyBabyCards">
+  <button id="next" class="lightbox-nav next" type="button" aria-label="Следующая">›</button>
+</div>
+
+<script>
+const categories = {
+  speech: {
+    title: "🗣️ Говорилки",
+    count: 80,
+    folder: "speech",
+    prefix: "catalog_speech",
+    total: 80
+  },
+  firstWords: {
+    title: "👶 Первые слова",
+    count: 46,
+    folder: "first-words",
+    prefix: "catalog_first_words",
+    total: 46
+  },
+  emotions: {
+    title: "😊 Эмоции",
+    count: 17,
+    folder: "emotions",
+    prefix: "catalog_emotions",
+    total: 17
+  }
+};
+
+const categoriesEl = document.getElementById("categories");
+const viewer = document.getElementById("viewer");
+const titleEl = document.getElementById("title");
+const countEl = document.getElementById("count");
+const grid = document.getElementById("grid");
+const lightbox = document.getElementById("lightbox");
+const lightboxImage = document.getElementById("lightbox-image");
+
+let currentImages = [];
+let currentIndex = 0;
+
+function pad(n) {
+  return String(n).padStart(2, "0");
 }
-document.querySelectorAll(".category").forEach(btn=>{
- btn.addEventListener("click",()=>showCategory(btn.dataset.category));
+
+function makeImages(item) {
+  return Array.from({length: item.total}, (_, i) =>
+    `${item.folder}/${item.prefix}-${pad(i + 1)}.webp`
+  );
+}
+
+function showCategory(key) {
+  const item = categories[key];
+  currentImages = makeImages(item);
+  titleEl.textContent = item.title;
+  countEl.textContent = item.count + " карточек";
+  grid.innerHTML = "";
+
+  currentImages.forEach((src, index) => {
+    const button = document.createElement("button");
+    button.className = "card";
+    button.type = "button";
+    button.setAttribute("aria-label", `Открыть карточку ${index + 1}`);
+
+    const img = document.createElement("img");
+    img.src = src;
+    img.alt = `Карточка ${index + 1}`;
+    img.loading = "lazy";
+    img.decoding = "async";
+
+    button.appendChild(img);
+    button.addEventListener("click", () => openLightbox(index));
+    grid.appendChild(button);
+  });
+
+  categoriesEl.classList.add("hidden");
+  viewer.classList.remove("hidden");
+  window.scrollTo({top: 0, behavior: "smooth"});
+}
+
+function openLightbox(index) {
+  currentIndex = index;
+  lightboxImage.src = currentImages[currentIndex];
+  lightbox.classList.remove("hidden");
+  document.body.classList.add("no-scroll");
+}
+
+function closeLightbox() {
+  lightbox.classList.add("hidden");
+  lightboxImage.removeAttribute("src");
+  document.body.classList.remove("no-scroll");
+}
+
+function move(delta) {
+  if (!currentImages.length) return;
+  currentIndex = (currentIndex + delta + currentImages.length) % currentImages.length;
+  lightboxImage.src = currentImages[currentIndex];
+}
+
+document.querySelectorAll(".category").forEach(button => {
+  button.addEventListener("click", () => showCategory(button.dataset.category));
 });
-document.getElementById("back").addEventListener("click",()=>{
- viewer.classList.add("hidden");
- categoriesEl.classList.remove("hidden");
- embedEl.innerHTML="";
+
+document.getElementById("back").addEventListener("click", () => {
+  closeLightbox();
+  viewer.classList.add("hidden");
+  categoriesEl.classList.remove("hidden");
+  window.scrollTo({top: 0, behavior: "smooth"});
+});
+
+document.getElementById("close").addEventListener("click", closeLightbox);
+document.getElementById("prev").addEventListener("click", () => move(-1));
+document.getElementById("next").addEventListener("click", () => move(1));
+
+lightbox.addEventListener("click", event => {
+  if (event.target === lightbox) closeLightbox();
+});
+
+document.addEventListener("keydown", event => {
+  if (lightbox.classList.contains("hidden")) return;
+  if (event.key === "Escape") closeLightbox();
+  if (event.key === "ArrowLeft") move(-1);
+  if (event.key === "ArrowRight") move(1);
 });
 </script>
 </body>
