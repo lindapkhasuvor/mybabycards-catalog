@@ -68,3 +68,5 @@ jobs:
           git add speech first-words emotions
           git commit -m "Add optimized catalog cards" || echo "No changes to commit"
           git push
+
+# trigger import
